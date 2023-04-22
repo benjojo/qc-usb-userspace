@@ -1,0 +1,89 @@
+Testing has happened with Acer Travelmate 332T featuring USB OHCI and
+linux kernel 2.2.21. The driver also compiles and runs with 2.4.18 with
+the same hadware. Also UHCI desktop system with 2.4.x kernel has been tested.
+
+BUGS
+----
+! Programs like camsource open the device and leave it open even if grabbing
+  images only now and then. The driver streams all the time, should stop
+  streaming if images are not captured even if device is still open.
+- Changing the exposure with HDCS sensor causes corrupted frames. Especially
+  bad with automatic exposure control.
+- There are corrupted frames now and then, at least with VV6410.
+- Sometimes the image sequence doesn't start. You need to restart your
+  camera software many times, it will then start eventually. Reason unknown.
+- Sometimes (rarely) I get message
+	already running port 1 disabled by hub (EMI?), re-enabling...
+  from Linux and the driver must be reloaded before the camera works again.
+  Not a problem in this driver (but probably in kernel drivers or in hardware),
+  I believe. Caused by power overload? Currently the driver tries to work
+  around this problem, but the workaround doesn't always work with VV6410.
+  This seems to happen only on OHCI laptop, not on UHCI desktop.
+- My computer seems to hang if I physically unplug the camera while drivers
+  are still loaded. To be investigated...
+  This might be a problem with 2.2.x only.
+  Not a problem in this driver (but probably in kernel drivers), I believe.
+! subsample=1 doesn't subsample vertically with Photobit and doesn't
+  work at all with VV6410.
+- QuickCam Web (0x046D/0x0870) doesn't work with any other camera (UHCI).
+  Seems to be problem with hardware/Linux USB drivers. Reqs too much power?
+  Happens even in different root hubs. Works on other computers.
+- When QuickCam Web is unplugged and replugged while the camera is in use,
+  the video stream doesn't restart with kernel 2.6.0. Works with other cameras,
+  works with all cameras in 2.4.x. This one makes no sense.
+  Hmm... not sure if kernel version matters, happens sometimes with 2.4.x too.
+  Hmm... works now fine with 2.6.7.
+- When using simultaneously two cameras in different busses under 2.6.x
+  and killing the applications suddenly (like killall -9 xawtv) there's
+  about 1/3 possibility for total kernel crash. Even SysRq doesn't work.
+  No panic/oops messages, rarely I get messages of recursive call to do_irq
+  and stack overflow. (Nforce2-OHCI)
+  Hmm... can't reproduce anymore with 2.6.7.
+- Older versions of the driver worked (qce-ga) but the new versions don't.
+  This might be problem mainly with VV6410 sensor and ProductId=850.
+  USER_OPT=-DQCEGA_MODE=1 sometimes seems to help but not always.
+- Non-ASCII characters turn into "?"-characters in /proc/version confusing
+  quickcam.sh.
+
+(!=can be fixed with current knowledge, needs just doing it)
+
+TODO
+----
+- Allow changing driver options with qcset while another application has the
+  driver open. Problem: second open("/dev/video") fails. Why? Using procfs
+  would solve this. Works with 2.6.x.
+- Automatic gain control is less sophisticated and accurate than the exposure
+  control. Gain also decreases image quality, sometimes very much. So please
+  try to use enough light that gain can be kept at minimum.
+- Look what we need to make sound and button working with QuickCam Web.
+- Make compression to other supported cameras as well.
+- Better bayer-to-RGB conversions. IIR filter, edge detection, template
+  matching, speculative pixel selection... (hi Cagdas!)
+- Allow using software exposure control with Photobit (if it's better)
+  It appears that the Photobit internal autoexposure changes exposure by
+  a constant value, and on very small integration times (much light)
+  it is simply too rough and can not find a good integration time.
+  This leads either to dirty gray image or oscillation (if R17 is too small).
+- Allow using multiple cameras on same bus (lower bandwidth,
+  is it possible? Maybe not with all camera).
+- Implement sensor defect correction.
+- Allow setting hue on Photobit even with automatic exposure control.
+- Flicker avoidance (exposure time should be multiple of 50/60 Hz)
+- Add support for dkms
+- Add Gstreamer module to handle format conversions, possibly with vloopback
+- Add option to allow very long exposure times (with at least HDCS).
+- Add accumulation mode support for HDCS sensor
+- quickcam.sh should look for necessary drivers (USB, video) from
+  /proc/ksyms, not if the modules have been loaded, because the latter
+  doesn't work when modules have been compiled statically.
+- Multiple opens don't work very well. Should improve.
+
+DONE
+----
+! Photobit brightness control doesn't seem to work very well.
+- When buffers are full, the oldest frame should be dropped (not newest).
+  This still doesn't work if the buffers get full while read()
+  or ioctl() calls are being done (or more accurately, when driver is
+  running in function qc_capt_get(), but with two buffers it can't be
+  made better. With three buffers it could be done, but is it worthwhile?
+

@@ -1,0 +1,69 @@
+--- linux-2.4.20.orig/drivers/usb/Config.in	Fri Nov 29 17:51:32 2002
++++ linux-2.4.20/drivers/usb/Config.in	Sat Jan 25 22:53:23 2003
+@@ -78,6 +78,7 @@
+       dep_tristate '  USB IBM (Xirlink) C-it Camera support' CONFIG_USB_IBMCAM $CONFIG_USB $CONFIG_VIDEO_DEV
+       dep_tristate '  USB OV511 Camera support' CONFIG_USB_OV511 $CONFIG_USB $CONFIG_VIDEO_DEV
+       dep_tristate '  USB Philips Cameras' CONFIG_USB_PWC $CONFIG_USB $CONFIG_VIDEO_DEV
++      dep_tristate '  USB Logitech QuickCam Camera support' CONFIG_USB_QC $CONFIG_USB $CONFIG_VIDEO_DEV
+       dep_tristate '  USB SE401 Camera support' CONFIG_USB_SE401 $CONFIG_USB $CONFIG_VIDEO_DEV
+       dep_tristate '  USB STV680 (Pencam) Camera support' CONFIG_USB_STV680 $CONFIG_USB $CONFIG_VIDEO_DEV
+       dep_tristate '  USB 3com HomeConnect (aka vicam) support (EXPERIMENTAL)' CONFIG_USB_VICAM $CONFIG_USB $CONFIG_VIDEO_DEV $CONFIG_EXPERIMENTAL
+--- linux-2.4.20.orig/Documentation/Configure.help	Fri Nov 29 17:51:07 2002
++++ linux-2.4.20/Documentation/Configure.help	Sat Jan 25 23:51:37 2003
+@@ -14307,6 +14307,29 @@
+   The module will be called pwc.o.  If you want to compile it as a
+   module, say M here and read <file:Documentation/modules.txt>.
+ 
++Logitech QuickCam webcam support
++CONFIG_USB_QC
++  Say Y or M here if you want to use the Logitech QuickCam Express
++  cameras. Also some other cameras are supported, such as Dexxa
++  and Labtec cameras, which are based on ST Microelectronics
++  VV6410, Hewlett Packard HDCS-1000/1100, Agilent Technologies
++  HDCS-1020, or Photobit PB-0100/0101 sensor chip.
++
++  This driver has an user space configuration tool, which allows
++  setting some driver parameters without reloading it (the
++  parameters can be also set as driver options when loading it).
++  It is available from <http://qce-ga.sourceforge.net>.
++
++  This driver uses the Video For Linux API. You must say Y or M to
++  "Video For Linux" (under Character Devices) to use this driver.
++  Information on this API and pointers to "v4l" programs may be found
++  on the WWW at <http://roadrunner.swansea.uk.linux.org/v4l.shtml>.
++
++  This code is also available as a module ( = code which can be
++  inserted in and removed from the running kernel whenever you want).
++  The module will be called quickcam.o.  If you want to compile it as a
++  module, say M here and read <file:Documentation/modules.txt>.
++
+ USB SE401 Camera support
+ CONFIG_USB_SE401
+   Say Y here if you want to connect this type of camera to your
+--- linux-2.4.20.orig/drivers/usb/Makefile	Fri Nov 29 17:51:32 2002
++++ linux-2.4.20/drivers/usb/Makefile	Sat Jan 25 22:53:32 2003
+@@ -17,6 +17,7 @@
+ list-multi		:= usbcore.o hid.o pwc.o
+ usbcore-objs		:= usb.o usb-debug.o hub.o
+ hid-objs		:= hid-core.o
+ pwc-objs		:= pwc-if.o pwc-misc.o pwc-ctrl.o pwc-uncompress.o
++qc-objs			:= qc-driver.o qc-hdcs.o qc-pb0100.o qc-vv6410.o qc-formats.o qc-mjpeg.o qc-memory.o
+ 
+ 
+@@ -72,6 +73,7 @@
+ obj-$(CONFIG_USB_EMI26)		+= emi26.o
+ obj-$(CONFIG_USB_MIDI)		+= usb-midi.o
+ obj-$(CONFIG_USB_IBMCAM)	+= ibmcam.o usbvideo.o ultracam.o
+ obj-$(CONFIG_USB_PWC)		+= pwc.o
++obj-$(CONFIG_USB_QC)		+= quickcam.o
+ obj-$(CONFIG_USB_DC2XX)		+= dc2xx.o
+ obj-$(CONFIG_USB_MDC800)	+= mdc800.o
+@@ -121,5 +123,8 @@
+ hid.o: $(hid-objs)
+ 	$(LD) -r -o $@ $(hid-objs)
+ 
+ pwc.o: $(pwc-objs)
+ 	$(LD) -r -o $@ $(pwc-objs)
++
++quickcam.o: $(qc-objs)
++	$(LD) -r -o $@ $(qc-objs)

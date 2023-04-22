@@ -1,0 +1,59 @@
+ USB Quickcam Video Camera driver
+ 
+ Supports Logitech Quickcam Express
+ 
+ Quickcam Team:
+         Lead developer
+           Jean-Freceric Clere <jfclere@sinix.net>
+           Nikolas Zimmermann <wildfox@kde.org>
+  Quickcam Revers-Enginnering:
+           Georg Acher <acher@in.tum.de>
+  Photobit Support:
+            Mark Cave-Ayland <mca198@ecs.soton.ac.uk>
+ 
+  Would also like to thank the following contributors:
+           Carlo E Prelz, Rogier Wolff, Samuel Linclau, Matthew Denner,
+           and any body else whom we have failed to mention.
+  Special thanks for the help for RB24 to YUV422 conversion:
+            Aron Rosenberg <amr42@cornell.edu>
+ 
+ 
+   Thank the guys, who wrote the cpia driver (P.Prengler,S.Bertin,J.Erdfelt)
+
+Lastly sourceforge for hosting the site
+Check http://qce-ga.sourceforge.net for updates/news/mailing lists
+
+Copyrights Major details  at the beginning of quickcam.c, additional
+copyrighted material yuv.c(JF.Clere) and testquickcam.c(N.Zimmermann) see
+the beginnings of those files for detail.
+
+Logitech Quickcam Express USB Driver
+------------------------------------
+
+1. How to compile?
+Just use a plain "make" to compile the driver.
+
+2a. The easiest way to load modules is to use the quickcam.sh shell script
+To run it type ./quickcam.sh (If you have compiled USB and/or V4L support into
+Kernel rather than as modules you should use method 2b)
+
+2b. How to use with insmod?
+Typing "insmod mod_quickcam.o" should do the trick.
+
+3.  What are qce-ga's features?
+ * 2.2 + 2.4 Support
+ * Video4Linux compatible driver
+ * ProcFS Support (+ VideoProcFS)
+ * RGB24 and YUV* support
+ * full mmap() and read() support
+ * ....
+
+4. What are the parameters wich are accepted by mod_quickcam.o?
+Easily find it out with "modinfo -p mod_quickcam.o"
+   insmod mod_quickcam.o debug=n (n=1,2,4,8,16,32 or any ored values).
+   insmod mod_quickcam.o rgain=red bgain=blue ggain=green.
+   red, blue and green are initial gain values this allows to correct the 
+   colour of the images. The default values are rgain=192 bgain=192 ggain=176
+
+Cheers,
+ Nikolas Zimmermann <wildfox@kde.org>

@@ -1,0 +1,179 @@
+Applications that have been tested to work with qc-usb:
+-------------------------------------------------------
+
+avifile (0.7-0.7.16): works
+[library for creating, processing, and playing back AVI files]
+- avirec: works (use "qcset compat=dblbuf" and command line similar to
+  avirec -x 352 -y 288 -c 'Uncompressed YUY2' test.avi)
+- avicap: does NOT work (overlay capturing directly to framebuffer not supported)
+
+Broadcast 2000c: works
+[Non-linear video editing application]
+
+came: not tested
+
+camserv (0.42): works
+[Read video and show it as JPEG-images via HTTP protocol in selected port]
+- Keeps camera open all the time, and the driver reads frames from
+  camera constantly even if nobody would be reading. Causes lot of
+  "lost frames" messages and wastes CPU time, but otherwise works fine.
+- Start camserv and point mozilla or compatible browser to URL
+  http://localhost:9192. Then press reload, which starts displaying video.
+
+camsource (0.6.0): works
+[Read video and show it as JPEG-images via HTTP or as video with a Java applet or Mozilla]
+- Keeps camera open all the time, and the driver reads frames from
+  camera constantly even if nobody would be reading. Causes lot of
+  "lost frames" messages and wastes CPU time, but otherwise works fine.
+
+camstream (0.25): works
+[display video in a window]
+- Use "qcset compat=dblbuf". Otherwise camstream displays message
+  "there are more buffers requested than MBUF can provide.
+  Falling back to non-mmap()ed mode.", however, non-mmap() mode
+  doesn't seem to work.
+
+Cinelerra: not tested
+[Non-linear video editing application]
+
+effectv (0.3.6): works
+[display video in a window with fancy effects]
+- Use "qcset compat=dblbuf".
+
+fame (0.9.0): does NOT work
+[fast realtime video and audio encoder to MPEG-1/4]
+- Requires VIDEO_PALETTE_YUV420 which is not supported by the driver.
+
+fbtv: not tested
+
+ffmpeg (cvs-2002-10-28): works
+[hyper fast realtime video and audio encoder to several formats e.g. MPEG]
+
+gnomemeeting (0.12.2): works
+[Videoconferencing application]
+- Use "qcset compat=dblbuf" (this is gnomemeeting bug)
+
+gqcam (0.9): works
+[Video displayer and snapshot taker]
+- You must disable automatic brightness control from gqcam
+- You should use "qcset compat=torgb" (or gqcam BGR filter)
+
+gstreamer (0.6.0): works
+[a framework for streaming media]
+- Use command line similar to
+  gst-launch v4lsrc ! xvideosink
+- Use "qcset compat=dblbuf" (this is gstreamer bug)
+
+hasciicam (0.9): works
+[Text mode video viewer, can capture to text or html format continuously]
+- Keeps camera open all the time, and the driver reads frames from
+  camera constantly even if delay between frames is long. Causes lot of
+  "lost frames" messages and wastes CPU time, but otherwise works fine.
+
+lavrec (mjpegtools-1.6.0): does NOT work
+[Record MJPEG-compressed videos, supports some hardware MJPEG-devices]
+- Requires VIDEO_PALETTE_YUV420 which is not supported by the driver.
+
+motion (2.6.3): works
+[Detect motion, and save frames with motion into separate files]
+- Use "qcset compat=dblbuf" (this is motion bug, patch to fix is available
+  from http://www.ee.oulu.fi/~tuukkat/quickcam/)
+- Turn off motion brightness control, "auto_brightness no" in /etc/motion.conf
+- Set image size to a supported size (specifically: the default for motion is
+  352x288, but in compressed mode the driver supports at maximum 320x240.
+  You must use argument -s 320x240 for motion or the images will be corrupted)
+
+motv (3.72): works
+[Video displayer and snapshot taker, may come with xawtv]
+- Use "qcset compat=16x", otherwise with certain chipsets (e.g. Trident Cyber)
+  with Xvideo and window sizes which are not multiple of eight, may display
+  corrupted image. This is likely a bug in XFree server.
+
+mpeg4ip (0.9.8): works
+[fancy GUI MPEG-4 recording, playback, and streaming over network toolset]
+
+mplayer (0.90): works
+[Video displayer and encoder]
+- Use command line similar to
+  mplayer -fps 7.5 -tv on:driver=v4l:width=352:height=288:outfmt=rgb24
+  in normal mode or in compressed mode
+  mplayer -fps 15 -tv on:driver=v4l:width=320:height=240:outfmt=rgb24
+- MPlayer 0.90rc4 and newer flip the image upside down with outfmt=rgb24,
+  outfmt=yuy2 works fine. This bug isn't in 0.90rc2 and older versions.
+
+realproducer: not tested
+
+streamer (3.72): works
+[record single frames or video with sound into file, may come with xawtv]
+- Gives apparently harmless error message:
+  "Oops: can't count up file names any more", nevertheless captures image.
+
+ttv (3.72): works
+[Text mode video viewer]
+
+tuxview/dvb-zapping (0.9.4.20020321): does NOT work
+- Requires framebuffer support from V4L driver
+
+vgrabbj (0.8.7): works very well
+[Grab single frame or frames at specified frequency into same file]
+- Opens video device only when grabs image, doesn't stream constantly
+- Option -z can be used to discard selected number of frames initially:
+  gives time for the driver automatic brightness control to settle.
+
+vic (1:2.8ucl1.1.3): works
+[Videoconferencing application]
+- Use "qcset compat=dblbuf" (this is vic bug)
+- Vic does not detect correctly the supported image sizes of camera:
+  in particular, it thinks that compressed mode which supports maximum
+  320x240 is actually the "normal" size 352x288, and the button is
+  incorrectly enabled. You must select manually "small" image size.
+
+vidcat (0.7.2): works
+[capture single frames into file]
+- vidcat comes with w3cam
+
+videodog (0.23): works
+[simple command line tool for capturing (multiple) images]
+- Good documentation
+
+vstream (0.4.5): does NOT work
+[fast video+audio capture tool]
+- Uses BTTV specific IOCTL BTTV_FIELDNR (800476C2) which is not supported.
+
+w3cam (0.7.2): works
+[Read video and show it in browser using Javascript and cgi-program]
+- The cgi-program opens and closes the camera for each captured frame,
+  so automatic brightness adaptation in the driver doesn't work. Instead,
+  disable it and set manually brightness and contrast, e.g.
+  qcset adaptive=n keepsettings=y -b 32000 -c 16000
+
+webcam (0.72): works
+[capture and upload continuously images via ftp/ssh or just save into file]
+- Use the example configuration file shown in the manual page, but remove
+  the line containing "input = composite1".
+- Keeps camera open all the time, and the driver reads frames from
+  camera constantly even if delay between frames is long. Causes lot of
+  "lost frames" messages and wastes CPU time, but otherwise works fine.
+
+webcam_server (0.40): works
+[Read video and show it as JPEG-images via HTTP or as video with a Java applet]
+- Start webcam_serv and point a browser to URL http://localhost:8888.
+- Use either "qcset compat=torgb" or (preferably) webcam_serv -x.
+- Keeps camera open all the time, and the driver reads frames from
+  camera constantly even if nobody would be reading. Causes lot of
+  "lost frames" messages and wastes CPU time, but otherwise works fine.
+- The shown picture is three frames older than what camera currently sees:
+  you must press three times "reload" until the picture is current
+  At least partially due to the driver's fault (one frame delay).
+
+wmtv (0.6.5): does NOT work
+[display video in a small dockable icon-size window]
+- Requires that hardware/driver supports image size scaling, what QuickCam
+  does not do.
+
+xawtv (3.72): works
+[Video displayer and snapshot taker]
+- Use "qcset compat=16x", otherwise with certain chipsets (e.g. Trident Cyber)
+  with Xvideo and window sizes which are not multiple of eight may display
+  corrupted image. This is likely a bug in XFree server.
+
