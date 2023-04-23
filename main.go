@@ -194,7 +194,7 @@ func main() {
 			case 0x8002, 0x8006, 0xC002, 0xC006: // End of Frame
 				logIfDebug("End Of Frame, Frame was %v bytes", CurrentImage.Size())
 				if FrameNumber%15 == 0 {
-					fd, _ := os.Create(fmt.Sprintf("%d.png", FrameNumber))
+					fd, _ := os.Create(fmt.Sprintf("live.png"))
 					png.Encode(fd, CurrentImage.ConvertIntoImage())
 					fd.Close()
 				}
