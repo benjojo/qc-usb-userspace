@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"flag"
+	"fmt"
+	"image/png"
 	"io"
 	"log"
+	"os"
 	"sync"
 
 	"github.com/google/gousb"
@@ -166,7 +169,7 @@ func main() {
 	}()
 
 	CurrentImage := ImageInProgress{}
-
+	FrameNumber := 0
 	for {
 		<-MsgPoker
 		for {
@@ -187,8 +190,15 @@ func main() {
 			switch msgType {
 			case 0x8001, 0x8005, 0xC001, 0xC005: // New frame
 				logIfDebug("New Frame setup")
+				FrameNumber++
 			case 0x8002, 0x8006, 0xC002, 0xC006: // End of Frame
 				logIfDebug("End Of Frame, Frame was %v bytes", CurrentImage.Size())
+				if FrameNumber%15 == 0 {
+					fd, _ := os.Create(fmt.Sprintf("%d.png", FrameNumber))
+					png.Encode(fd, CurrentImage.ConvertIntoImage())
+					fd.Close()
+				}
+
 				CurrentImage = ImageInProgress{}
 			case 0x0200, 0x4200:
 				CurrentImage.AddImageData(msgBytes)
