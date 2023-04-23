@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"flag"
+	"io"
 	"log"
+	"sync"
 
 	"github.com/google/gousb"
 )
@@ -126,26 +130,98 @@ func main() {
 		dev.Control(v.rType, v.request, v.val, v.idx, v.data)
 	}
 
+	PacketStreamBuffer := make([]byte, 128000)
+	usbIsoDatabuf := bytes.NewBuffer(PacketStreamBuffer)
+	MsgPoker := make(chan bool, 1)
+	bufLock := sync.Mutex{}
 	go func() {
-		rs, err := isoData.NewStream(1023*5, 10)
+		rs, err := isoData.NewStream(1023*10, 10)
 		if err != nil {
 			log.Fatalf("cannot setup isoData.NewStream %v", err)
 		}
 		n := 0
 		for {
-			aaa := make([]byte, 1023)
+			aaa := make([]byte, 65000)
 			bn, err := rs.Read(aaa)
 			if err != nil {
 				log.Fatalf("?? %v", err)
 			}
 			n++
-			logIfDebug("Read (%v) %#v (%v)", n, aaa[:5], bn)
+			// logIfDebug("Read (%v) %#v (%v)", n, aaa[:5], bn)
+			bufLock.Lock()
+			_, err = usbIsoDatabuf.Write(aaa[:bn])
+			bufLock.Unlock()
+
+			if err != nil {
+				log.Fatalf("PacketStreamBuffer ran out of buffer")
+			}
+			if n%10 == 0 {
+				select {
+				case MsgPoker <- true:
+				default:
+				}
+			}
+
 		}
 	}()
 
-	select {}
-	// deviceConfig.Desc
+	CurrentImage := ImageInProgress{}
 
+	for {
+		<-MsgPoker
+		for {
+			bufLock.Lock()
+			var msgType, msgLen uint16
+			err := binary.Read(usbIsoDatabuf, binary.BigEndian, &msgType)
+			if err != nil {
+				log.Printf("ooprs %v", err)
+			}
+			binary.Read(usbIsoDatabuf, binary.BigEndian, &msgLen)
+			if msgType != 0 {
+				// log.Printf("%#v %#v (%v)", msgType, msgLen, usbIsoDatabuf.Len())
+			}
+			msgBytes := make([]byte, msgLen)
+			io.ReadFull(usbIsoDatabuf, msgBytes)
+			bufLock.Unlock()
+
+			switch msgType {
+			case 0x8001, 0x8005, 0xC001, 0xC005: // New frame
+				logIfDebug("New Frame setup")
+			case 0x8002, 0x8006, 0xC002, 0xC006: // End of Frame
+				logIfDebug("End Of Frame, Frame was %v bytes", CurrentImage.Size())
+				CurrentImage = ImageInProgress{}
+			case 0x0200, 0x4200:
+				CurrentImage.AddImageData(msgBytes)
+			default:
+				if msgType != 0 {
+					logIfDebug("Unknow msg %#v", msgType)
+				}
+			}
+
+			if usbIsoDatabuf.Len() < 1000 {
+				break
+			}
+		}
+	}
+	// deviceConfig.Desc
+}
+
+type ImageInProgress struct {
+	buf *bytes.Buffer
+}
+
+func (iip *ImageInProgress) AddImageData(b []byte) {
+	if iip.buf == nil {
+		iip.buf = bytes.NewBuffer(nil)
+	}
+	iip.buf.Write(b)
+}
+
+func (iip *ImageInProgress) Size() int {
+	if iip.buf == nil {
+		return 0
+	}
+	return iip.buf.Len()
 }
 
 func logIfDebug(format string, args ...interface{}) {
