@@ -10,7 +10,7 @@ import (
 )
 
 func (iip *ImageInProgress) ConvertIntoImage() image.Image {
-	finalImg := image.NewRGBA(image.Rect(0, 0, 400, 400))
+	finalImg := image.NewRGBA(image.Rect(0, 0, 352, 288))
 	bitreader := iobit.NewReader(iip.buf.Bytes())
 	xLimit, yLimit := 352, 288
 	// xLimit, yLimit := 320, 240

@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
+	"image"
 	"image/png"
 	"io"
 	"log"
@@ -46,17 +47,13 @@ func main() {
 	// 				Number: 0,
 	// 				AltSettings: []gousb.InterfaceSetting{
 	// 					gousb.InterfaceSetting{
-	// 						Number:    0,
-	// 						Alternate: 0,
-	// 						Class:     0xff,
-	// 						SubClass:  0xff,
-	// 						Protocol:  0xff,
+	// 						Number: 0, Alternate: 0, Class: 0xff, SubClass: 0xff, Protocol: 0xff,
 	// 						Endpoints: map[gousb.EndpointAddress]gousb.EndpointDesc{
 	// 							0x81: gousb.EndpointDesc{Address: 0x81,
 	// 								Number:        1,
 	// 								Direction:     true,
 	// 								MaxPacketSize: 0,
-	// 								TransferType:  0x1,
+	// 								TransferType:  0x1, /*isochronous*/
 	// 								PollInterval:  1000000,
 	// 								IsoSyncType:   0x0,
 	// 								UsageType:     0x1,
@@ -65,22 +62,34 @@ func main() {
 	// 								Number:        2,
 	// 								Direction:     true,
 	// 								MaxPacketSize: 1,
-	// 								TransferType:  0x3,
+	// 								TransferType:  0x3, /*interrupt*/
 	// 								PollInterval:  16000000,
 	// 								IsoSyncType:   0x0,
 	// 								UsageType:     0x0,
 	// 							},
-	// 						} /*, iInterface: 0*/},
+	// 						}},
 	// 					gousb.InterfaceSetting{
-	// 						Number: 0,
-	// 						Alternate: 1,
-	// 						Class:     0xff,
-	// 						SubClass:  0xff,
-	// 						Protocol:  0xff,
+	// 						Number: 0, Alternate: 1, Class: 0xff, SubClass: 0xff, Protocol: 0xff,
 	// 						Endpoints: map[gousb.EndpointAddress]gousb.EndpointDesc{
-	// 							0x81: gousb.EndpointDesc{Address: 0x81, Number: 1, Direction: true, MaxPacketSize: 1023, TransferType: 0x1, PollInterval: 1000000, IsoSyncType: 0x0, UsageType: 0x1},
-	// 							0x82: gousb.EndpointDesc{Address: 0x82, Number: 2, Direction: true, MaxPacketSize: 1, TransferType: 0x3, PollInterval: 16000000, IsoSyncType: 0x0, UsageType: 0x0},
-	// 						} /*, iInterface: 0*/},
+	// 							0x81: gousb.EndpointDesc{
+	// 								Address:       0x81,
+	// 								Number:        1,
+	// 								Direction:     true,
+	// 								MaxPacketSize: 1023,
+	// 								TransferType:  0x1, /*isochronous*/
+	// 								PollInterval:  1000000,
+	// 								IsoSyncType:   0x0,
+	// 								UsageType:     0x1},
+	// 							0x82: gousb.EndpointDesc{
+	// 								Address:       0x82,
+	// 								Number:        2,
+	// 								Direction:     true,
+	// 								MaxPacketSize: 1,
+	// 								TransferType:  0x3, /*interrupt*/
+	// 								PollInterval:  16000000,
+	// 								IsoSyncType:   0x0,
+	// 								UsageType:     0x0},
+	// 						}},
 	// 				},
 	// 			},
 	// 		} /*, iConfiguration: 0*/},
@@ -93,35 +102,6 @@ func main() {
 	}
 
 	logIfDebug("Device Interfaces \n%#v", *USBInterface)
-	// exampleInterface :=
-	// 	gousb.Interface{Setting: gousb.InterfaceSetting{
-	// 		Number:    0,
-	// 		Alternate: 0,
-	// 		Class:     0xff,
-	// 		SubClass:  0xff,
-	// 		Protocol:  0xff,
-	// 		Endpoints: map[gousb.EndpointAddress]gousb.EndpointDesc{
-	// 			0x81: gousb.EndpointDesc{
-	// 				Address:       0x81,
-	// 				Number:        1,
-	// 				Direction:     true,
-	// 				MaxPacketSize: 0,
-	// 				TransferType:  0x1,
-	// 				PollInterval:  1000000,
-	// 				IsoSyncType:   0x0,
-	// 				UsageType:     0x1},
-	// 			0x82: gousb.EndpointDesc{Address: 0x82,
-	// 				Number:        2,
-	// 				Direction:     true,
-	// 				MaxPacketSize: 1,
-	// 				TransferType:  0x3,
-	// 				PollInterval:  16000000,
-	// 				IsoSyncType:   0x0,
-	// 				UsageType:     0x0},
-	// 		} /*, iInterface: 0*/},
-	// 	/*config: (*gousb.Config)(0xc00013c640)*/}
-
-	// dev.Control()
 
 	isoData, err := USBInterface.InEndpoint(1)
 	if err != nil {
@@ -168,6 +148,9 @@ func main() {
 		}
 	}()
 
+	outputFrames := make(chan image.Image, 1)
+	go ffmpegSendToV4L2(outputFrames)
+
 	CurrentImage := ImageInProgress{}
 	FrameNumber := 0
 	for {
@@ -197,6 +180,14 @@ func main() {
 					fd, _ := os.Create(fmt.Sprintf("live.png"))
 					png.Encode(fd, CurrentImage.ConvertIntoImage())
 					fd.Close()
+				}
+				if FrameNumber > 10 {
+					select {
+					case outputFrames <- CurrentImage.ConvertIntoImage():
+					default:
+						logIfDebug("Dropped frame to ffmpeg")
+
+					}
 				}
 
 				CurrentImage = ImageInProgress{}
