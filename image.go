@@ -34,14 +34,14 @@ func (iip *ImageInProgress) ConvertIntoImage() image.Image {
 		return finalImg
 	}
 
-	nn := bayer.NewNearestNeighbour(bayerPixlesArray, &bayer.Options{
+	nn := bayer.NewBilinear(bayerPixlesArray, &bayer.Options{
 		ByteOrder:    binary.LittleEndian,
 		Depth:        8,
 		Width:        xLimit,
 		Height:       yLimit,
 		Pattern:      bayer.GRBG,
 		BlackLevel:   0,
-		WhiteLevel:   16,
+		WhiteLevel:   15,
 		WhiteBalance: []float64{1, 1, 1},
 	})
 
