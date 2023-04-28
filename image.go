@@ -2,14 +2,22 @@ package main
 
 import (
 	"encoding/binary"
+	"fmt"
 	"image"
 	"image/color"
+	"io/fs"
+	"os"
 
 	"github.com/bamiaux/iobit"
 	"github.com/benjojo/qc-usb-userspace/bayer"
 )
 
 func (iip *ImageInProgress) ConvertIntoImage() image.Image {
+
+	if *debugLogging {
+		os.WriteFile("./debug-bayer.bin", []byte(fmt.Sprintf("%#v", iip.buf.Bytes())), fs.ModePerm)
+	}
+
 	finalImg := image.NewRGBA(image.Rect(0, 0, 352, 288))
 	bitreader := iobit.NewReader(iip.buf.Bytes())
 	xLimit, yLimit := 352, 288
